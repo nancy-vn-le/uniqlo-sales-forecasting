@@ -482,29 +482,8 @@ if page == "Overview":
     st.plotly_chart(fig_trend, use_container_width=True)
 
     # ── Bottom row ───────────────────────────────────────────────────────────
-    col1, col2 = st.columns(2)
-
-    with col1:
-        div_df = pd.read_sql("""
-            SELECT division_name, department, SUM(sales_amt) AS total_sales
-            FROM division_daily
-            GROUP BY division_code, division_name, department
-            ORDER BY total_sales DESC
-        """, engine)
-        dept_palette = {"Women": PALETTE["women"], "Men": PALETTE["men"],
-                        "Kids": PALETTE["kids"],  "Others": PALETTE["others"]}
-        fig_pie = px.pie(
-            div_df, values="total_sales", names="division_name",
-            color="department", hole=0.38,
-            color_discrete_map=dept_palette,
-            title="Revenue Share by Division",
-        )
-        fig_pie.update_traces(textfont_color="#e4e8f0")
-        fig_pie.update_layout(**{k: v for k, v in _CHART_BASE.items()
-                                  if k not in ("xaxis", "yaxis")}, height=380)
-        st.plotly_chart(fig_pie, use_container_width=True)
-
-    with col2:
+    col_dow, _ = st.columns(2)
+    with col_dow:
         dow_avg = (daily.groupby("day_of_week")["actual_sales"]
                    .mean().reindex(DOW_ORDER))
         bar_colors = [PALETTE["primary"]] * 7
@@ -518,6 +497,109 @@ if page == "Overview":
         fig_dow.update_layout(title="Avg Sales by Day of Week", showlegend=False)
         fig_dow.update_yaxes(tickformat="$,.0f")
         st.plotly_chart(fig_dow, use_container_width=True)
+
+    # ── Division Pulse ─────────────────────────────────────────────────────────
+    st.markdown(
+        f"<div style='margin:20px 0 12px;padding-top:18px;"
+        f"border-top:1px solid {PALETTE['border']};font-size:0.8rem;"
+        f"color:{PALETTE['subtext']};text-transform:uppercase;"
+        f"letter-spacing:.08em'>Division Revenue Pulse — 24-month avg daily sales</div>",
+        unsafe_allow_html=True,
+    )
+    div_monthly_df = pd.read_sql("""
+        SELECT division_code, division_name, department,
+               strftime('%Y-%m', date) AS month,
+               AVG(sales_amt)          AS avg_daily
+        FROM   division_daily
+        GROUP  BY division_code, division_name, department, month
+        ORDER  BY division_code, month
+    """, engine)
+    div_rev_df = pd.read_sql("""
+        SELECT division_code, SUM(sales_amt) AS total_sales
+        FROM   division_daily
+        GROUP  BY division_code
+    """, engine)
+    total_rev_map = dict(zip(div_rev_df.division_code, div_rev_df.total_sales))
+
+    _DEPT_COLORS = {
+        "Women": PALETTE["women"], "Men": PALETTE["men"],
+        "Kids":  PALETTE["kids"],  "Others": PALETTE["others"],
+    }
+    _DEPT_ORDER = ["Women", "Men", "Kids", "Others"]
+
+    def _sparkline(values, color, uid):
+        W, H = 130, 32
+        mn, mx = min(values), max(values)
+        rng = mx - mn or 1
+        pts = [(i / (len(values) - 1) * W,
+                H - ((v - mn) / rng) * (H - 4) - 2)
+               for i, v in enumerate(values)]
+        line = f"M{pts[0][0]:.1f},{pts[0][1]:.1f}"
+        area = f"M{pts[0][0]:.1f},{H} L{pts[0][0]:.1f},{pts[0][1]:.1f}"
+        for i in range(1, len(pts)):
+            x0, y0 = pts[i - 1]; x1, y1 = pts[i]; cx = (x0 + x1) / 2
+            seg = f" C{cx:.1f},{y0:.1f} {cx:.1f},{y1:.1f} {x1:.1f},{y1:.1f}"
+            line += seg
+            area += seg
+        area += f" L{pts[-1][0]:.1f},{H} Z"
+        c = color.replace('#', '')
+        return (
+            f'<svg viewBox="0 0 {W} {H}" preserveAspectRatio="none" '
+            f'style="width:100%;height:{H}px;display:block">'
+            f'<defs><linearGradient id="sg{c}{uid}" x1="0" y1="0" x2="0" y2="1">'
+            f'<stop offset="0%" stop-color="{color}" stop-opacity="0.28"/>'
+            f'<stop offset="100%" stop-color="{color}" stop-opacity="0.02"/>'
+            f'</linearGradient></defs>'
+            f'<path d="{area}" fill="url(#sg{c}{uid})"/>'
+            f'<path d="{line}" fill="none" stroke="{color}" '
+            f'stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'
+            f'</svg>'
+        )
+
+    _css = (
+        f"<style>"
+        f".dpgrid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px}}"
+        f".dplabel{{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;"
+        f"padding-bottom:6px;border-bottom:1px solid {PALETTE['border']};"
+        f"margin-top:16px;margin-bottom:4px}}"
+        f".dpcard{{background:{PALETTE['card_bg']};border:1px solid {PALETTE['border']};"
+        f"border-left:3px solid var(--dc);border-radius:7px;padding:10px 12px 8px}}"
+        f".dpname{{font-size:.64rem;font-weight:600;text-transform:uppercase;"
+        f"letter-spacing:.05em;color:{PALETTE['subtext']};"
+        f"white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}"
+        f".dptotal{{font-size:1.05rem;font-weight:700;color:{PALETTE['text']};margin:3px 0 6px}}"
+        f"</style>"
+    )
+    parts = [_css, '<div class="dpgrid">']
+    for dept in _DEPT_ORDER:
+        dept_color = _DEPT_COLORS[dept]
+        dept_codes = div_monthly_df.loc[
+            div_monthly_df.department == dept, 'division_code'
+        ].unique()
+        ranked = (div_rev_df[div_rev_df.division_code.isin(dept_codes)]
+                  .sort_values('total_sales', ascending=False)['division_code']
+                  .tolist())
+        parts.append(
+            f'<div class="dplabel" style="color:{dept_color};grid-column:1/-1">'
+            f'{dept}</div>'
+        )
+        for code in ranked:
+            grp = (div_monthly_df[div_monthly_df.division_code == code]
+                   .sort_values('month'))
+            if grp.empty:
+                continue
+            name = grp.iloc[0]['division_name']
+            monthly_vals = grp['avg_daily'].tolist()
+            total_m = total_rev_map.get(code, 0) / 1e6
+            svg = _sparkline(monthly_vals, dept_color, uid=str(code))
+            parts.append(
+                f'<div class="dpcard" style="--dc:{dept_color}">'
+                f'<div class="dpname">{name}</div>'
+                f'<div class="dptotal">${total_m:.1f}M</div>'
+                f'{svg}</div>'
+            )
+    parts.append('</div>')
+    st.markdown(''.join(parts), unsafe_allow_html=True)
 
 # ===========================================================================
 # PAGE 2: Division Forecast
