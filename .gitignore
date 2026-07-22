@@ -47,7 +47,7 @@ env/
 *.swp
 *.swo
 
-# Claude Code internal
+# Local tooling
 .claude/
 agent-os/
 CLAUDE.md
