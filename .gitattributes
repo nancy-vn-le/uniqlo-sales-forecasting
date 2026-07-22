@@ -1,0 +1,2 @@
+notebooks/*.ipynb linguist-detectable=false
+sql/*.sql linguist-detectable=true

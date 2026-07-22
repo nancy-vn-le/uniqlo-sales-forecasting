@@ -1,0 +1,58 @@
+# Generated data — too large for GitHub (regenerate with src/data_generation/)
+data/raw/transactions.csv
+data/raw/transaction_items.csv
+data/uniqlo.db
+data/uniqlo.db-shm
+data/uniqlo.db-wal
+# demo.db is the stripped version for Streamlit Cloud (3 aggregated tables only)
+
+# Trained model artifacts (regenerate with python src/train_models.py)
+src/models/*.pkl
+src/models/feature_cols.npy
+# ARIMA and Prophet models committed for Streamlit Cloud deployment
+!src/models/arima_div34.pkl
+!src/models/prophet_div34.pkl
+# npy files needed at runtime
+!src/models/feature_cols.npy
+!src/models/shap_expected_value.npy
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude Code internal
+.claude/
+agent-os/
+
+# Streamlit
+.streamlit/secrets.toml
+
+#project brief
+project_brief.md 
