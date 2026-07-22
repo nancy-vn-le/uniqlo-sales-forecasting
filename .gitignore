@@ -47,11 +47,6 @@ env/
 *.swp
 *.swo
 
-# Local tooling
-.claude/
-agent-os/
-CLAUDE.md
-
 # Streamlit
 .streamlit/secrets.toml
 
