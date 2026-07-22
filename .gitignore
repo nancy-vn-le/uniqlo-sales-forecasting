@@ -50,6 +50,7 @@ env/
 # Claude Code internal
 .claude/
 agent-os/
+CLAUDE.md
 
 # Streamlit
 .streamlit/secrets.toml
