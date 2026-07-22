@@ -1,0 +1,6 @@
+division_code,division_name,day_of_week,consecutive_flagged_periods,latest_rolling_bias_pct,direction,alert
+21,Women's Outerwear,Wednesday,4,-6.58,overestimating,Heads up: 4 consecutive weeks overestimating Wednesday sales in Women's Outerwear by ~6.6%.
+29,Women's Dress,Sunday,5,6.28,underestimating,Heads up: 5 consecutive weeks underestimating Sunday sales in Women's Dress by ~6.3%.
+29,Women's Dress,Thursday,10,10.2,underestimating,Heads up: 10 consecutive weeks underestimating Thursday sales in Women's Dress by ~10.2%.
+31,Men's Outerwear,Saturday,21,-5.52,overestimating,Heads up: 21 consecutive weeks overestimating Saturday sales in Men's Outerwear by ~5.5%.
+31,Men's Outerwear,Wednesday,5,-7.97,overestimating,Heads up: 5 consecutive weeks overestimating Wednesday sales in Men's Outerwear by ~8.0%.
